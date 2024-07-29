@@ -33,15 +33,14 @@ def fetch_flight_data():
     for i in response.data:
         info_dict = dict()
 
-        info_dict['name'] = i['itineraries'][0]['segments'][0]['carrierCode'] + i['itineraries'][0]['segments'][0]['number']
+        info_dict['airline'] = i['itineraries'][0]['segments'][0]['carrierCode']
         info_dict['departure'] = i['itineraries'][0]['segments'][0]['departure']['iataCode']
-        info_dict['departure_at'] = i['itineraries'][0]['segments'][0]['departure']['at'][11: 16]
+        info_dict['departure_at'] = i['itineraries'][0]['segments'][0]['departure']['at']
         info_dict['arrival'] = i['itineraries'][0]['segments'][0]['arrival']['iataCode']
-        info_dict['arrival_at'] = i['itineraries'][0]['segments'][0]['arrival']['at'][11: 16]
+        info_dict['arrival_at'] = i['itineraries'][0]['segments'][0]['arrival']['at']
         info_dict['duration'] = i['itineraries'][0]['segments'][0]['duration'][2: ].replace("H", "시간 ").replace("M", "분")
         info_dict['seats'] = i['numberOfBookableSeats']
         info_dict['price'] = i['price']['total']
-        info_dict['checked_bag'] = i['pricingOptions']['includedCheckedBagsOnly']
 
         flight_list.append(info_dict)
 
