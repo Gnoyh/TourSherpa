@@ -20,29 +20,45 @@ def fetch_flight_data():
     )
 
     # 항공편 데이터 요청
-    response = amadeus.shopping.flight_offers_search.get(
-        originLocationCode='ICN',
-        destinationLocationCode='KIX',
-        departureDate='2024-11-14',
-        adults=1
-    )
+    response_list = []
+    airport_list = ["NRT", "HND", "KIX", "NGO", "FUK", "CTS", "OKA", "SDJ", "KMI", "FSZ", "HIJ", "MYJ", "OIT", "HSG", "KMJ", "YGJ", "TAK"]
+    date_list = []
+
+    today = datetime.today()
+
+    for i in range(90):
+        date = today + timedelta(days=i)
+        date_list.append(date.strftime('%Y-%m-%d'))
+
+    for i in airport_list:
+        for j in date_list:
+            response = amadeus.shopping.flight_offers_search.get(
+                originLocationCode='ICN',
+                destinationLocationCode=i,
+                departureDate=j,
+                adults=1,
+                nonStop='true'
+            )
+        
+            response_list.append(response.data)
 
     # 데이터 처리
     flight_list = []
 
-    for i in response.data:
-        info_dict = dict()
-
-        info_dict['airline'] = i['itineraries'][0]['segments'][0]['carrierCode']
-        info_dict['departure'] = i['itineraries'][0]['segments'][0]['departure']['iataCode']
-        info_dict['departure_at'] = i['itineraries'][0]['segments'][0]['departure']['at']
-        info_dict['arrival'] = i['itineraries'][0]['segments'][0]['arrival']['iataCode']
-        info_dict['arrival_at'] = i['itineraries'][0]['segments'][0]['arrival']['at']
-        info_dict['duration'] = i['itineraries'][0]['segments'][0]['duration'][2: ].replace("H", "시간 ").replace("M", "분")
-        info_dict['seats'] = i['numberOfBookableSeats']
-        info_dict['price'] = i['price']['total']
-
-        flight_list.append(info_dict)
+    for i in response_list:
+        for j in i:
+            info_dict = dict()
+        
+            info_dict['airline'] = j['itineraries'][0]['segments'][0]['carrierCode']
+            info_dict['departure'] = j['itineraries'][0]['segments'][0]['departure']['iataCode']
+            info_dict['departure_at'] = j['itineraries'][0]['segments'][0]['departure']['at']
+            info_dict['arrival'] = j['itineraries'][0]['segments'][0]['arrival']['iataCode']
+            info_dict['arrival_at'] = j['itineraries'][0]['segments'][0]['arrival']['at']
+            info_dict['duration'] = j['itineraries'][0]['segments'][0]['duration'][2: ].replace("H", "시간 ").replace("M", "분")
+            info_dict['seats'] = j['numberOfBookableSeats']
+            info_dict['price'] = j['price']['total']
+        
+            flight_list.append(info_dict)
 
     return pd.DataFrame(flight_list)
 
