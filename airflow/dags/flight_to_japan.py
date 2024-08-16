@@ -2,9 +2,11 @@ from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
 from airflow.hooks.base import BaseHook
 from airflow.utils.dates import days_ago
+from airflow.models import Variable
 from amadeus import Client, ResponseError
 import pandas as pd 
 import boto3
+import time
 from datetime import datetime, timedelta
 
 # Airflow Connection에서 S3 연결 정보 가져오기
@@ -15,32 +17,43 @@ def get_s3_connection():
 # Amadeus API를 통해 항공편 정보 가져오기
 def fetch_flight_data():
     amadeus = Client(
-        client_id = "bNPlTPOBKmXuY8b3FfUeRPGG7swBNGuV",
-        client_secret = "46D2WeXiicgBgVdj"
+        client_id = Variable.get("amadeus_id"),
+        client_secret = Variable.get("amadeus_secret")
     )
 
     # 항공편 데이터 요청
     response_list = []
-    airport_list = ["NRT", "HND", "KIX", "NGO", "FUK", "CTS", "OKA", "SDJ", "KMI", "FSZ", "HIJ", "MYJ", "OIT", "HSG", "KMJ", "YGJ", "TAK"]
-    date_list = []
-
-    today = datetime.today()
-
-    for i in range(90):
-        date = today + timedelta(days=i)
-        date_list.append(date.strftime('%Y-%m-%d'))
+    airport_list = ["NRT", "KIX", "NGO", "FUK", "CTS", "OKA"]
+    
+    date = datetime.now().date() + timedelta(days=1)
 
     for i in airport_list:
-        for j in date_list:
+        try:
             response = amadeus.shopping.flight_offers_search.get(
                 originLocationCode='ICN',
                 destinationLocationCode=i,
-                departureDate=j,
+                departureDate=date,
                 adults=1,
                 nonStop='true'
             )
         
             response_list.append(response.data)
+
+            print("==========================================")
+            if response.data:
+                response_list.append(response.data)
+
+                print(response.data[0]['itineraries'][0]['segments'][0]['arrival']['iataCode'])
+                print(response.data[0]['itineraries'][0]['segments'][0]['departure']['at'])
+            else:
+                print(i)
+                print("비행편 없음")
+
+            time.sleep(1)
+        except ResponseError as error:
+            print(error)
+
+            return 0
 
     # 데이터 처리
     flight_list = []
@@ -49,7 +62,7 @@ def fetch_flight_data():
         for j in i:
             info_dict = dict()
         
-            info_dict['airline'] = j['itineraries'][0]['segments'][0]['carrierCode']
+            info_dict['airline_code'] = j['itineraries'][0]['segments'][0]['carrierCode']
             info_dict['departure'] = j['itineraries'][0]['segments'][0]['departure']['iataCode']
             info_dict['departure_at'] = j['itineraries'][0]['segments'][0]['departure']['at']
             info_dict['arrival'] = j['itineraries'][0]['segments'][0]['arrival']['iataCode']
@@ -72,7 +85,9 @@ def upload_to_s3(data):
     )
 
     bucket_name = 'team-hori-2-bucket'
-    s3_client.put_object(Body=data.to_csv(), Bucket=bucket_name, Key="source/source_flight/test_flight.csv")
+    key_name = "source/source_flight/flight/to_japan.csv"
+
+    s3_client.put_object(Body=data.to_csv(index=False), Bucket=bucket_name, Key=key_name)
 
 # DAG 정의
 default_args = {
@@ -81,7 +96,7 @@ default_args = {
 }
 
 with DAG(
-    dag_id='test_flight',
+    dag_id='flight_to_japan',
     default_args=default_args,
     schedule_interval='@daily',
     catchup=False

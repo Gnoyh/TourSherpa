@@ -8,7 +8,7 @@ import pandas as pd
 import requests
 import pytz
 
-countrys=['AT', 'AU', 'BR', 'CA', 'CN', 'DE', 'ES', 'FR', 'GB', 'ID', 'IN', 'IT', 'JP', 'MY', 'NL', 'TW', 'US']
+countrys=['AT', 'AU', 'CA', 'CN', 'DE', 'ES', 'FR', 'GB', 'ID', 'IN', 'IT', 'JP', 'MY', 'NL', 'TW', 'US']
 categories = [
     "expos",
     "concerts",
@@ -61,10 +61,10 @@ def fetch_and_upload_data():
 
 def generate_and_save_data(**kwargs):
     csv_filename = f'/tmp/TravelEvent_data.csv'  # Connection ID of your S3 connection in Airflow
-    s3_bucket_name = Variable.get('my_s3_bucket')
+    s3_bucket_name = Variable.get('s3_bucket_name')
     s3_key = f'source/source_TravelEvents/TravelEvents.csv'
 
-    s3_hook = S3Hook('TravelEvent_s3_conn')
+    s3_hook = S3Hook('s3_connection')
     s3_hook.load_file(filename=csv_filename, key=s3_key, bucket_name=s3_bucket_name, replace=True)
 
 
