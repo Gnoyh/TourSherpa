@@ -75,11 +75,11 @@ DATABASES = {
         'ENGINE': 'django_redshift_backend',
         'NAME': 'dev',
         'USER': 'awsuser',
-        'PASSWORD': 'nDihmJJRWfG5krrOKXQTRoUJ1xsIKHsbuCUxUytJ',
+        'PASSWORD': '',
         'HOST': 'team-hori-2.cvkht4jvd430.ap-northeast-2.redshift.amazonaws.com',
         'PORT': '5439',
         'OPTIONS': {
-            'options': '-c search_path=hotel,public,flight'
+            'options': '-c search_path=hotel,public,flight,place'
         },
     }
 }
